@@ -1,0 +1,6 @@
+{
+  "name": "학급 독서 도장판",
+  "description": "교실 대형 TV에 띄워 학생들이 번호 도장과 한줄평을 남기는 오프라인 학급 독서 도장판",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
