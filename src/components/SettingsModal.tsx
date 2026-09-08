@@ -61,36 +61,37 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="bg-stone-800 text-white p-5 md:p-6 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-white">
+        <div className="bg-stone-800 text-white p-4 sm:p-5 md:p-6 flex items-center justify-between">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-white flex-shrink-0">
               <Settings className="w-6 h-6" />
             </div>
             <div>
-              <h2 className="text-xl md:text-2xl font-black">학급 환경 및 데이터 관리</h2>
-              <p className="text-xs md:text-sm text-stone-300">오프라인 단독 구동 & 브라우저 자동 저장</p>
+              <h2 className="text-lg sm:text-xl md:text-2xl font-black">학급 환경 및 데이터 관리</h2>
+              <p className="text-xs sm:text-sm text-stone-300">실시간 기기 간 동기화 & 브라우저 자동 저장</p>
             </div>
           </div>
           <button
             id="settings-close-btn"
             onClick={onClose}
-            className="w-10 h-10 rounded-xl bg-white/20 hover:bg-white/30 text-white flex items-center justify-center transition cursor-pointer"
+            className="min-h-[44px] min-w-[44px] rounded-xl bg-white/20 hover:bg-white/30 text-white flex items-center justify-center transition cursor-pointer"
+            aria-label="닫기"
           >
             <X className="w-6 h-6" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="p-5 md:p-6 space-y-6 overflow-y-auto flex-1">
+        <div className="p-4 sm:p-5 md:p-6 space-y-4 sm:space-y-6 overflow-y-auto flex-1">
           
           {/* 1. Class Name & Student count */}
-          <form onSubmit={handleSaveConfig} className="bg-stone-50 p-4 rounded-2xl border border-stone-200 space-y-4">
-            <h3 className="font-black text-stone-800 text-lg flex items-center gap-2">
+          <form onSubmit={handleSaveConfig} className="bg-stone-50 p-3.5 sm:p-4 rounded-2xl border border-stone-200 space-y-3 sm:space-y-4">
+            <h3 className="font-black text-stone-800 text-base sm:text-lg flex items-center gap-2">
               <span>🏫 학급 기본 설정</span>
             </h3>
 
             <div>
-              <label className="block text-sm font-bold text-stone-700 mb-1">
+              <label className="block text-xs sm:text-sm font-bold text-stone-700 mb-1">
                 화면 상단 학급 명칭
               </label>
               <input
@@ -99,12 +100,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 value={className}
                 onChange={(e) => setClassName(e.target.value)}
                 placeholder="예: 3학년 2반 독서 도장판"
-                className="w-full p-2.5 bg-white rounded-xl border border-stone-300 font-bold text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                className="w-full p-2.5 bg-white rounded-xl border border-stone-300 font-bold text-base text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-500"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-bold text-stone-700 mb-1">
+              <label className="block text-xs sm:text-sm font-bold text-stone-700 mb-1">
                 우리 반 학생 수 (1번 ~ N번 버튼 생성)
               </label>
               <div className="flex items-center gap-3">
@@ -115,39 +116,39 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   max={50}
                   value={studentCount}
                   onChange={(e) => setStudentCount(parseInt(e.target.value, 10) || 25)}
-                  className="w-24 p-2.5 bg-white rounded-xl border border-stone-300 font-bold text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-500 text-center"
+                  className="w-24 p-2.5 bg-white rounded-xl border border-stone-300 font-bold text-base text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-500 text-center"
                 />
-                <span className="text-stone-600 font-medium text-sm">명 (1~{studentCount}번 버튼 자동 생성)</span>
+                <span className="text-stone-600 font-medium text-xs sm:text-sm">명 (1~{studentCount}번 버튼 생성)</span>
               </div>
             </div>
 
             <button
               id="settings-save-config-btn"
               type="submit"
-              className="w-full py-2.5 bg-stone-900 hover:bg-stone-800 text-white rounded-xl font-black text-base transition flex items-center justify-center gap-2 cursor-pointer"
+              className="min-h-[44px] w-full py-2.5 bg-stone-900 hover:bg-stone-800 text-white rounded-xl font-black text-sm sm:text-base transition flex items-center justify-center gap-2 cursor-pointer active:scale-98"
             >
               {savedSuccess ? <Check className="w-5 h-5 text-emerald-400" /> : null}
               <span>{savedSuccess ? '설정이 저장되었습니다!' : '설정 저장하기'}</span>
             </button>
           </form>
 
-          {/* 2. Privacy & Offline Info */}
-          <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 flex items-start gap-3">
-            <ShieldCheck className="w-6 h-6 text-emerald-600 flex-shrink-0 mt-0.5" />
-            <div className="text-xs md:text-sm text-emerald-900">
+          {/* 2. Realtime Sync & Privacy Info */}
+          <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-3.5 sm:p-4 flex items-start gap-3">
+            <ShieldCheck className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-600 flex-shrink-0 mt-0.5" />
+            <div className="text-xs sm:text-sm text-emerald-900">
               <p className="font-black text-emerald-950 mb-1">
-                안전한 오프라인 단독 저장 원칙
+                실시간 기기 간 동기화 & 개인정보 보호
               </p>
               <p className="leading-relaxed">
-                학생의 이름, 생년월일 등 개인정보를 일체 수집하지 않으며 오직 '번호'로만 기록됩니다.
-                외부 서버 통신 없이 교사용 PC 브라우저에 안전하게 저장됩니다.
+                • <strong>실시간 연동:</strong> TV, 교사용 PC, 학생 스마트폰 등 모든 기기에서 동일 링크 접속 시 도장과 한줄평이 실시간으로 공유됩니다.<br/>
+                • <strong>개인정보 보호:</strong> 학생의 이름이나 개인정보를 전혀 수집하지 않으며, 오직 '출석 번호'로만 안전하게 기록됩니다.
               </p>
             </div>
           </div>
 
           {/* 3. Session & Data Reset Options */}
-          <div className="space-y-3">
-            <h3 className="font-black text-stone-800 text-lg">데이터 관리 및 초기화</h3>
+          <div className="space-y-2.5 sm:space-y-3">
+            <h3 className="font-black text-stone-800 text-base sm:text-lg">데이터 관리 및 초기화</h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <button
@@ -158,7 +159,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     onClearTodayStamps();
                   }
                 }}
-                className="p-3 bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-900 rounded-xl font-bold text-sm text-left transition flex items-center gap-2.5 cursor-pointer"
+                className="min-h-[50px] p-3 bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-900 rounded-xl font-bold text-sm text-left transition flex items-center gap-2.5 cursor-pointer"
               >
                 <RotateCcw className="w-5 h-5 text-amber-600 flex-shrink-0" />
                 <div>
@@ -175,7 +176,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     onResetToDemo();
                   }
                 }}
-                className="p-3 bg-stone-100 hover:bg-stone-200 border border-stone-300 text-stone-800 rounded-xl font-bold text-sm text-left transition flex items-center gap-2.5 cursor-pointer"
+                className="min-h-[50px] p-3 bg-stone-100 hover:bg-stone-200 border border-stone-300 text-stone-800 rounded-xl font-bold text-sm text-left transition flex items-center gap-2.5 cursor-pointer"
               >
                 <RotateCcw className="w-5 h-5 text-stone-600 flex-shrink-0" />
                 <div>
@@ -187,22 +188,22 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           </div>
 
           {/* 4. Backup & Restore (USB export/import) */}
-          <div className="p-4 bg-stone-50 rounded-2xl border border-stone-200 space-y-3">
-            <h4 className="text-sm font-black text-stone-800">
-              💾 데이터 백업 및 복원 (USB 보관용)
+          <div className="p-3.5 sm:p-4 bg-stone-50 rounded-2xl border border-stone-200 space-y-2.5 sm:space-y-3">
+            <h4 className="text-xs sm:text-sm font-black text-stone-800">
+              💾 데이터 백업 및 복원 (파일 보관용)
             </h4>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <button
                 id="settings-export-btn"
                 type="button"
                 onClick={onExportData}
-                className="flex-1 py-2.5 bg-white hover:bg-stone-100 border border-stone-300 rounded-xl font-bold text-sm text-stone-800 flex items-center justify-center gap-2 transition cursor-pointer"
+                className="min-h-[44px] flex-1 py-2.5 bg-white hover:bg-stone-100 border border-stone-300 rounded-xl font-bold text-xs sm:text-sm text-stone-800 flex items-center justify-center gap-2 transition cursor-pointer"
               >
                 <Download className="w-4 h-4 text-blue-600" />
                 <span>백업 파일 다운로드</span>
               </button>
 
-              <label className="flex-1 py-2.5 bg-white hover:bg-stone-100 border border-stone-300 rounded-xl font-bold text-sm text-stone-800 flex items-center justify-center gap-2 transition cursor-pointer text-center">
+              <label className="min-h-[44px] flex-1 py-2.5 bg-white hover:bg-stone-100 border border-stone-300 rounded-xl font-bold text-xs sm:text-sm text-stone-800 flex items-center justify-center gap-2 transition cursor-pointer text-center">
                 <Upload className="w-4 h-4 text-emerald-600" />
                 <span>백업 파일 불러오기</span>
                 <input

@@ -1,0 +1,34 @@
+{
+  "$schema": "https://raw.githubusercontent.com/firebase/firebase-tools/master/schema/firestore-blueprint.json",
+  "collections": {
+    "books": {
+      "description": "Recommended books for the class",
+      "fields": {
+        "title": { "type": "string" },
+        "recommenderType": { "type": "string" },
+        "recommenderNumber": { "type": "number", "optional": true },
+        "intro": { "type": "string", "optional": true },
+        "colorTheme": { "type": "string" },
+        "createdAt": { "type": "number" }
+      }
+    },
+    "stamps": {
+      "description": "Student stamps and one-line comments",
+      "fields": {
+        "bookId": { "type": "string" },
+        "studentNumber": { "type": "number" },
+        "stampType": { "type": "string" },
+        "comment": { "type": "string" },
+        "createdAt": { "type": "number" },
+        "rotation": { "type": "number" }
+      }
+    },
+    "config": {
+      "description": "Class configuration including title and student count",
+      "fields": {
+        "className": { "type": "string" },
+        "studentCount": { "type": "number" }
+      }
+    }
+  }
+}
