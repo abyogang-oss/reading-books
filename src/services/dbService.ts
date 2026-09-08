@@ -2,16 +2,43 @@ import {
   collection,
   doc,
   setDoc,
-  deleteDoc,
   onSnapshot,
   query,
   orderBy,
   getDocs,
   writeBatch,
+  getDocFromServer,
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Book, Stamp, ClassConfig, StampType, BookColorTheme } from '../types';
 import { INITIAL_BOOKS, INITIAL_CONFIG } from '../utils/storage';
+
+export enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: null,
+      email: null,
+      emailVerified: false,
+      isAnonymous: true,
+      tenantId: null,
+      providerInfo: [],
+    },
+    operationType,
+    path,
+  };
+  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  return errInfo;
+}
 
 const BOOKS_COLLECTION = 'books';
 const STAMPS_COLLECTION = 'stamps';
@@ -19,31 +46,58 @@ const CONFIG_COLLECTION = 'config';
 const CONFIG_DOC_ID = 'main';
 
 /**
- * Seed initial data if database is empty on first run
+ * Validate connection to Firestore
  */
-export async function seedInitialDataIfEmpty(): Promise<void> {
+export async function testConnection(): Promise<boolean> {
+  try {
+    const configRef = doc(db, CONFIG_COLLECTION, CONFIG_DOC_ID);
+    await getDocFromServer(configRef);
+    return true;
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('the client is offline')) {
+      console.warn('Firebase client is offline or initializing.');
+    }
+    return false;
+  }
+}
+
+/**
+ * Seed initial data if database is empty on first run,
+ * prioritizing any existing local user modifications.
+ */
+export async function seedInitialDataIfEmpty(
+  localBooks?: Book[],
+  localStamps?: Stamp[],
+  localConfig?: ClassConfig
+): Promise<void> {
   try {
     const booksCol = collection(db, BOOKS_COLLECTION);
     const snapshot = await getDocs(booksCol);
     if (snapshot.empty) {
-      console.log('Seeding initial books and config into Firestore...');
+      console.log('Seeding initial books and config into Firestore for all devices...');
       const batch = writeBatch(db);
 
-      // Seed books
-      for (const book of INITIAL_BOOKS) {
+      const booksToSeed = localBooks && localBooks.length > 0 ? localBooks : INITIAL_BOOKS;
+      for (const book of booksToSeed) {
         const bookRef = doc(db, BOOKS_COLLECTION, book.id);
         batch.set(bookRef, book);
       }
 
-      // Seed config
+      if (localStamps && localStamps.length > 0) {
+        for (const stamp of localStamps) {
+          const stampRef = doc(db, STAMPS_COLLECTION, stamp.id);
+          batch.set(stampRef, stamp);
+        }
+      }
+
       const configRef = doc(db, CONFIG_COLLECTION, CONFIG_DOC_ID);
-      batch.set(configRef, INITIAL_CONFIG);
+      batch.set(configRef, localConfig || INITIAL_CONFIG);
 
       await batch.commit();
-      console.log('Seeding complete.');
+      console.log('Initial data seeded successfully.');
     }
   } catch (err) {
-    console.warn('Could not auto-seed Firestore (using offline mode or rules active):', err);
+    handleFirestoreError(err, OperationType.WRITE, BOOKS_COLLECTION);
   }
 }
 
@@ -70,12 +124,12 @@ export function subscribeBooks(
         onUpdate(list);
       },
       (error) => {
-        console.error('Books onSnapshot error:', error);
+        handleFirestoreError(error, OperationType.LIST, BOOKS_COLLECTION);
         onError?.(error);
       }
     );
   } catch (err) {
-    console.error('Failed to subscribe to books:', err);
+    handleFirestoreError(err, OperationType.LIST, BOOKS_COLLECTION);
     onError?.(err as Error);
     return () => {};
   }
@@ -104,12 +158,12 @@ export function subscribeStamps(
         onUpdate(list);
       },
       (error) => {
-        console.error('Stamps onSnapshot error:', error);
+        handleFirestoreError(error, OperationType.LIST, STAMPS_COLLECTION);
         onError?.(error);
       }
     );
   } catch (err) {
-    console.error('Failed to subscribe to stamps:', err);
+    handleFirestoreError(err, OperationType.LIST, STAMPS_COLLECTION);
     onError?.(err as Error);
     return () => {};
   }
@@ -132,12 +186,12 @@ export function subscribeConfig(
         }
       },
       (error) => {
-        console.error('Config onSnapshot error:', error);
+        handleFirestoreError(error, OperationType.GET, `${CONFIG_COLLECTION}/${CONFIG_DOC_ID}`);
         onError?.(error);
       }
     );
   } catch (err) {
-    console.error('Failed to subscribe to config:', err);
+    handleFirestoreError(err, OperationType.GET, `${CONFIG_COLLECTION}/${CONFIG_DOC_ID}`);
     onError?.(err as Error);
     return () => {};
   }
@@ -164,25 +218,35 @@ export async function addBook(
     createdAt: Date.now(),
   };
 
-  const bookRef = doc(db, BOOKS_COLLECTION, newId);
-  await setDoc(bookRef, bookData);
-  return newId;
+  try {
+    const bookRef = doc(db, BOOKS_COLLECTION, newId);
+    await setDoc(bookRef, bookData);
+    return newId;
+  } catch (err) {
+    handleFirestoreError(err, OperationType.CREATE, `${BOOKS_COLLECTION}/${newId}`);
+    throw err;
+  }
 }
 
 /**
  * Delete a book and its attached stamps
  */
 export async function deleteBook(bookId: string, associatedStamps: Stamp[]): Promise<void> {
-  const batch = writeBatch(db);
-  batch.delete(doc(db, BOOKS_COLLECTION, bookId));
+  try {
+    const batch = writeBatch(db);
+    batch.delete(doc(db, BOOKS_COLLECTION, bookId));
 
-  for (const stamp of associatedStamps) {
-    if (stamp.bookId === bookId) {
-      batch.delete(doc(db, STAMPS_COLLECTION, stamp.id));
+    for (const stamp of associatedStamps) {
+      if (stamp.bookId === bookId) {
+        batch.delete(doc(db, STAMPS_COLLECTION, stamp.id));
+      }
     }
-  }
 
-  await batch.commit();
+    await batch.commit();
+  } catch (err) {
+    handleFirestoreError(err, OperationType.DELETE, `${BOOKS_COLLECTION}/${bookId}`);
+    throw err;
+  }
 }
 
 /**
@@ -207,48 +271,69 @@ export async function addStamp(
     rotation: randomTilt,
   };
 
-  const stampRef = doc(db, STAMPS_COLLECTION, newId);
-  await setDoc(stampRef, stampData);
-  return stampData;
+  try {
+    const stampRef = doc(db, STAMPS_COLLECTION, newId);
+    await setDoc(stampRef, stampData);
+    return stampData;
+  } catch (err) {
+    handleFirestoreError(err, OperationType.CREATE, `${STAMPS_COLLECTION}/${newId}`);
+    throw err;
+  }
 }
 
 /**
  * Update class configuration
  */
 export async function updateConfig(newConfig: ClassConfig): Promise<void> {
-  const configRef = doc(db, CONFIG_COLLECTION, CONFIG_DOC_ID);
-  await setDoc(configRef, newConfig, { merge: true });
+  try {
+    const configRef = doc(db, CONFIG_COLLECTION, CONFIG_DOC_ID);
+    await setDoc(configRef, newConfig, { merge: true });
+  } catch (err) {
+    handleFirestoreError(err, OperationType.UPDATE, `${CONFIG_COLLECTION}/${CONFIG_DOC_ID}`);
+    throw err;
+  }
 }
 
 /**
  * Clear all stamps for a fresh session
  */
 export async function clearAllStamps(stamps: Stamp[]): Promise<void> {
-  const batch = writeBatch(db);
-  for (const s of stamps) {
-    batch.delete(doc(db, STAMPS_COLLECTION, s.id));
+  try {
+    const batch = writeBatch(db);
+    for (const s of stamps) {
+      batch.delete(doc(db, STAMPS_COLLECTION, s.id));
+    }
+    await batch.commit();
+  } catch (err) {
+    handleFirestoreError(err, OperationType.DELETE, STAMPS_COLLECTION);
+    throw err;
   }
-  await batch.commit();
 }
 
 /**
  * Reset back to initial demo books
  */
 export async function resetToDemo(currentBooks: Book[], currentStamps: Stamp[]): Promise<void> {
-  const batch = writeBatch(db);
+  try {
+    const batch = writeBatch(db);
 
-  for (const s of currentStamps) {
-    batch.delete(doc(db, STAMPS_COLLECTION, s.id));
+    for (const s of currentStamps) {
+      batch.delete(doc(db, STAMPS_COLLECTION, s.id));
+    }
+    for (const b of currentBooks) {
+      batch.delete(doc(db, BOOKS_COLLECTION, b.id));
+    }
+
+    for (const book of INITIAL_BOOKS) {
+      batch.set(doc(db, BOOKS_COLLECTION, book.id), book);
+    }
+
+    batch.set(doc(db, CONFIG_COLLECTION, CONFIG_DOC_ID), INITIAL_CONFIG);
+
+    await batch.commit();
+  } catch (err) {
+    handleFirestoreError(err, OperationType.WRITE, BOOKS_COLLECTION);
+    throw err;
   }
-  for (const b of currentBooks) {
-    batch.delete(doc(db, BOOKS_COLLECTION, b.id));
-  }
-
-  for (const book of INITIAL_BOOKS) {
-    batch.set(doc(db, BOOKS_COLLECTION, book.id), book);
-  }
-
-  batch.set(doc(db, CONFIG_COLLECTION, CONFIG_DOC_ID), INITIAL_CONFIG);
-
-  await batch.commit();
 }
+
